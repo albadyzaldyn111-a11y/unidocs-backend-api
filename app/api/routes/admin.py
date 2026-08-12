@@ -12,12 +12,17 @@ from app.repositories.misc_repositories import SettingsRepository
 from app.repositories.user_repository import UserRepository
 from app.schemas.admin_taxonomy import (
     DepartmentCreate,
+    DepartmentUpdate,
     FacultyCreate,
+    FacultyUpdate,
     LevelCreate,
+    LevelUpdate,
     SubjectCreate,
+    SubjectUpdate,
     UniversityCreate,
+    UniversityUpdate,
 )
-from app.schemas.auth import UserOut
+from app.schemas.auth import UserOut, UserUpdate
 from app.schemas.misc import AdminStatsOut, SettingUpdate
 from app.schemas.taxonomy import DepartmentOut, FacultyOut, LevelOut, SubjectOut, UniversityOut
 from app.services.admin_service import AdminService
@@ -69,6 +74,46 @@ def change_role(
     user_id: str, role: UserRole, current_user: CurrentUser = Depends(require_admin), db: Session = Depends(get_db)
 ):
     return AdminService(db).set_user_role(current_user.id, user_id, current_user.university_id, role)
+
+
+@router.put("/users/{user_id}", response_model=UserOut)
+def update_user(
+    user_id: str,
+    payload: UserUpdate,
+    current_user: CurrentUser = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    user = UserRepository(db).get_by_id(user_id)
+    if not user:
+        raise AppError("User not found", "USER_NOT_FOUND", 404)
+    
+    if payload.full_name is not None:
+        user.full_name = payload.full_name
+    if payload.role is not None:
+        user.role = payload.role
+    if payload.university_id is not None:
+        user.university_id = payload.university_id
+    if payload.is_active is not None:
+        user.is_active = payload.is_active
+    
+    db.commit()
+    AuditService(db).log(current_user.id, "UPDATE_USER", "user", user.id, user.email)
+    return user
+
+
+@router.delete("/users/{user_id}")
+def delete_user(user_id: str, current_user: CurrentUser = Depends(require_admin), db: Session = Depends(get_db)):
+    user = UserRepository(db).get_by_id(user_id)
+    if not user:
+        raise AppError("User not found", "USER_NOT_FOUND", 404)
+    
+    if user.id == current_user.id:
+        raise AppError("Cannot delete yourself", "FORBIDDEN", 403)
+        
+    db.delete(user)
+    db.commit()
+    AuditService(db).log(current_user.id, "DELETE_USER", "user", user_id, user.email)
+    return {"success": True, "message": "User deleted"}
 
 
 @router.get("/audit-log")
@@ -132,6 +177,42 @@ def create_university(
     return uni
 
 
+@router.put("/universities/{uni_id}", response_model=UniversityOut)
+def update_university(
+    uni_id: str,
+    payload: UniversityUpdate,
+    current_user: CurrentUser = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    uni = db.get(University, uni_id)
+    if not uni:
+        raise AppError("University not found", "UNIVERSITY_NOT_FOUND", 404)
+    
+    if payload.name is not None:
+        uni.name = payload.name
+    if payload.name_en is not None:
+        uni.name_en = payload.name_en
+    if payload.city is not None:
+        uni.city = payload.city
+    if payload.is_active is not None:
+        uni.is_active = payload.is_active
+        
+    db.commit()
+    AuditService(db).log(current_user.id, "UPDATE_UNIVERSITY", "university", uni.id, uni.name)
+    return uni
+
+
+@router.delete("/universities/{uni_id}")
+def delete_university(uni_id: str, current_user: CurrentUser = Depends(require_admin), db: Session = Depends(get_db)):
+    uni = db.get(University, uni_id)
+    if not uni:
+        raise AppError("University not found", "UNIVERSITY_NOT_FOUND", 404)
+    db.delete(uni)
+    db.commit()
+    AuditService(db).log(current_user.id, "DELETE_UNIVERSITY", "university", uni_id, uni.name)
+    return {"success": True, "message": "University deleted"}
+
+
 @router.post("/faculties", response_model=FacultyOut, status_code=201)
 def create_faculty(
     payload: FacultyCreate, current_user: CurrentUser = Depends(require_admin), db: Session = Depends(get_db)
@@ -145,6 +226,40 @@ def create_faculty(
     AuditService(db).log(current_user.id, "CREATE_FACULTY", "faculty", faculty.id, payload.name)
     db.commit()
     return faculty
+
+
+@router.put("/faculties/{faculty_id}", response_model=FacultyOut)
+def update_faculty(
+    faculty_id: str,
+    payload: FacultyUpdate,
+    current_user: CurrentUser = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    faculty = db.get(Faculty, faculty_id)
+    if not faculty:
+        raise AppError("Faculty not found", "FACULTY_NOT_FOUND", 404)
+    
+    if payload.name is not None:
+        faculty.name = payload.name
+    if payload.name_en is not None:
+        faculty.name_en = payload.name_en
+    if payload.is_active is not None:
+        faculty.is_active = payload.is_active
+        
+    db.commit()
+    AuditService(db).log(current_user.id, "UPDATE_FACULTY", "faculty", faculty.id, faculty.name)
+    return faculty
+
+
+@router.delete("/faculties/{faculty_id}")
+def delete_faculty(faculty_id: str, current_user: CurrentUser = Depends(require_admin), db: Session = Depends(get_db)):
+    faculty = db.get(Faculty, faculty_id)
+    if not faculty:
+        raise AppError("Faculty not found", "FACULTY_NOT_FOUND", 404)
+    db.delete(faculty)
+    db.commit()
+    AuditService(db).log(current_user.id, "DELETE_FACULTY", "faculty", faculty_id, faculty.name)
+    return {"success": True, "message": "Faculty deleted"}
 
 
 @router.post("/departments", response_model=DepartmentOut, status_code=201)
@@ -165,6 +280,40 @@ def create_department(
     AuditService(db).log(current_user.id, "CREATE_DEPARTMENT", "department", dept.id, payload.name)
     db.commit()
     return dept
+
+
+@router.put("/departments/{dept_id}", response_model=DepartmentOut)
+def update_department(
+    dept_id: str,
+    payload: DepartmentUpdate,
+    current_user: CurrentUser = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    dept = db.get(Department, dept_id)
+    if not dept:
+        raise AppError("Department not found", "DEPARTMENT_NOT_FOUND", 404)
+    
+    if payload.name is not None:
+        dept.name = payload.name
+    if payload.name_en is not None:
+        dept.name_en = payload.name_en
+    if payload.is_active is not None:
+        dept.is_active = payload.is_active
+        
+    db.commit()
+    AuditService(db).log(current_user.id, "UPDATE_DEPARTMENT", "department", dept.id, dept.name)
+    return dept
+
+
+@router.delete("/departments/{dept_id}")
+def delete_department(dept_id: str, current_user: CurrentUser = Depends(require_admin), db: Session = Depends(get_db)):
+    dept = db.get(Department, dept_id)
+    if not dept:
+        raise AppError("Department not found", "DEPARTMENT_NOT_FOUND", 404)
+    db.delete(dept)
+    db.commit()
+    AuditService(db).log(current_user.id, "DELETE_DEPARTMENT", "department", dept_id, dept.name)
+    return {"success": True, "message": "Department deleted"}
 
 
 @router.post("/levels", response_model=LevelOut, status_code=201)
@@ -188,6 +337,40 @@ def create_level(
     return level
 
 
+@router.put("/levels/{level_id}", response_model=LevelOut)
+def update_level(
+    level_id: str,
+    payload: LevelUpdate,
+    current_user: CurrentUser = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    level = db.get(Level, level_id)
+    if not level:
+        raise AppError("Level not found", "LEVEL_NOT_FOUND", 404)
+    
+    if payload.name is not None:
+        level.name = payload.name
+    if payload.name_en is not None:
+        level.name_en = payload.name_en
+    if payload.order_index is not None:
+        level.order_index = payload.order_index
+        
+    db.commit()
+    AuditService(db).log(current_user.id, "UPDATE_LEVEL", "level", level.id, level.name)
+    return level
+
+
+@router.delete("/levels/{level_id}")
+def delete_level(level_id: str, current_user: CurrentUser = Depends(require_admin), db: Session = Depends(get_db)):
+    level = db.get(Level, level_id)
+    if not level:
+        raise AppError("Level not found", "LEVEL_NOT_FOUND", 404)
+    db.delete(level)
+    db.commit()
+    AuditService(db).log(current_user.id, "DELETE_LEVEL", "level", level_id, level.name)
+    return {"success": True, "message": "Level deleted"}
+
+
 @router.post("/subjects", response_model=SubjectOut, status_code=201)
 def create_subject(
     payload: SubjectCreate, current_user: CurrentUser = Depends(require_admin), db: Session = Depends(get_db)
@@ -207,3 +390,39 @@ def create_subject(
     AuditService(db).log(current_user.id, "CREATE_SUBJECT", "subject", subject.id, payload.name)
     db.commit()
     return subject
+
+
+@router.put("/subjects/{subject_id}", response_model=SubjectOut)
+def update_subject(
+    subject_id: str,
+    payload: SubjectUpdate,
+    current_user: CurrentUser = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    subject = db.get(Subject, subject_id)
+    if not subject:
+        raise AppError("Subject not found", "SUBJECT_NOT_FOUND", 404)
+    
+    if payload.name is not None:
+        subject.name = payload.name
+    if payload.name_en is not None:
+        subject.name_en = payload.name_en
+    if payload.code is not None:
+        subject.code = payload.code
+    if payload.is_active is not None:
+        subject.is_active = payload.is_active
+        
+    db.commit()
+    AuditService(db).log(current_user.id, "UPDATE_SUBJECT", "subject", subject.id, subject.name)
+    return subject
+
+
+@router.delete("/subjects/{subject_id}")
+def delete_subject(subject_id: str, current_user: CurrentUser = Depends(require_admin), db: Session = Depends(get_db)):
+    subject = db.get(Subject, subject_id)
+    if not subject:
+        raise AppError("Subject not found", "SUBJECT_NOT_FOUND", 404)
+    db.delete(subject)
+    db.commit()
+    AuditService(db).log(current_user.id, "DELETE_SUBJECT", "subject", subject_id, subject.name)
+    return {"success": True, "message": "Subject deleted"}
