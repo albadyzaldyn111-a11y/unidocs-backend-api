@@ -1,17 +1,9 @@
-<<<<<<< HEAD
-from sqlalchemy import select
-from fastapi import APIRouter, Depends, Query
-from sqlalchemy.orm import Session
-
-from app.core.database import get_db
-=======
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.core.errors import AppError
->>>>>>> 5a8a671 (Support arbitrary file uploads and academic taxonomy management)
 from app.middleware.auth import CurrentUser, require_admin
 from app.models.enums import UserRole
 from app.models.misc import AuditLog
@@ -144,12 +136,9 @@ def create_university(
 def create_faculty(
     payload: FacultyCreate, current_user: CurrentUser = Depends(require_admin), db: Session = Depends(get_db)
 ):
-<<<<<<< HEAD
-=======
     university = db.get(University, payload.university_id)
     if not university:
         raise AppError("University not found", "UNIVERSITY_NOT_FOUND", 404)
->>>>>>> 5a8a671 (Support arbitrary file uploads and academic taxonomy management)
     faculty = Faculty(university_id=payload.university_id, name=payload.name, name_en=payload.name_en)
     db.add(faculty)
     db.flush()
@@ -162,12 +151,9 @@ def create_faculty(
 def create_department(
     payload: DepartmentCreate, current_user: CurrentUser = Depends(require_admin), db: Session = Depends(get_db)
 ):
-<<<<<<< HEAD
-=======
     faculty = db.get(Faculty, payload.faculty_id)
     if not faculty or faculty.university_id != payload.university_id:
         raise AppError("Faculty does not belong to this university", "FACULTY_NOT_FOUND", 404)
->>>>>>> 5a8a671 (Support arbitrary file uploads and academic taxonomy management)
     dept = Department(
         university_id=payload.university_id,
         faculty_id=payload.faculty_id,
@@ -185,12 +171,9 @@ def create_department(
 def create_level(
     payload: LevelCreate, current_user: CurrentUser = Depends(require_admin), db: Session = Depends(get_db)
 ):
-<<<<<<< HEAD
-=======
     department = db.get(Department, payload.department_id)
     if not department or department.university_id != payload.university_id:
         raise AppError("Department does not belong to this university", "DEPARTMENT_NOT_FOUND", 404)
->>>>>>> 5a8a671 (Support arbitrary file uploads and academic taxonomy management)
     level = Level(
         university_id=payload.university_id,
         department_id=payload.department_id,
@@ -209,12 +192,9 @@ def create_level(
 def create_subject(
     payload: SubjectCreate, current_user: CurrentUser = Depends(require_admin), db: Session = Depends(get_db)
 ):
-<<<<<<< HEAD
-=======
     level = db.get(Level, payload.level_id)
     if not level or level.university_id != payload.university_id:
         raise AppError("Level does not belong to this university", "LEVEL_NOT_FOUND", 404)
->>>>>>> 5a8a671 (Support arbitrary file uploads and academic taxonomy management)
     subject = Subject(
         university_id=payload.university_id,
         level_id=payload.level_id,

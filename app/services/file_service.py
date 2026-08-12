@@ -1,9 +1,6 @@
 import io
-<<<<<<< HEAD
-=======
 import mimetypes
 import re
->>>>>>> 5a8a671 (Support arbitrary file uploads and academic taxonomy management)
 from datetime import datetime, timezone
 
 from sqlalchemy.orm import Session
@@ -44,10 +41,7 @@ class FileService:
         description: str | None,
         filename: str,
         raw_bytes: bytes,
-<<<<<<< HEAD
-=======
         mime_type: str | None = None,
->>>>>>> 5a8a671 (Support arbitrary file uploads and academic taxonomy management)
     ) -> File:
         subject = self.taxonomy.get_subject(subject_id, university_id)
         if not subject:
@@ -61,29 +55,17 @@ class FileService:
         validate_size(len(raw_bytes), max_mb)
         validate_magic_bytes(raw_bytes[:5])
 
-<<<<<<< HEAD
-        if settings.get("page_count_check_enabled") == "true":
-=======
         extension = self._extension(filename)
         if settings.get("page_count_check_enabled") == "true" and extension == "pdf":
->>>>>>> 5a8a671 (Support arbitrary file uploads and academic taxonomy management)
             page_count = self._count_pdf_pages(raw_bytes)
             validate_page_count(page_count, int(settings["min_page_count"]))
 
         file_hash = compute_sha256(raw_bytes)
-<<<<<<< HEAD
-
-=======
->>>>>>> 5a8a671 (Support arbitrary file uploads and academic taxonomy management)
         existing = self.files.get_by_hash(file_hash, university_id)
         if existing:
             raise AppError("This exact file already exists in the library", "DUPLICATE_FILE", 409)
 
-<<<<<<< HEAD
-        storage_key = f"{university_id}/{file_hash}.pdf"
-=======
         storage_key = self._storage_key(university_id, file_hash, filename)
->>>>>>> 5a8a671 (Support arbitrary file uploads and academic taxonomy management)
         self.storage.save(storage_key, io.BytesIO(raw_bytes))
 
         file_obj = self.files.create(
@@ -92,11 +74,8 @@ class FileService:
             uploader_id=uploader_id,
             title=title,
             description=description,
-<<<<<<< HEAD
-=======
             original_filename=self._safe_filename(filename),
             mime_type=self._normalize_mime_type(mime_type, filename),
->>>>>>> 5a8a671 (Support arbitrary file uploads and academic taxonomy management)
             storage_key=storage_key,
             file_hash=file_hash,
             file_size_bytes=len(raw_bytes),
@@ -115,10 +94,7 @@ class FileService:
         parent_file_id: str,
         filename: str,
         raw_bytes: bytes,
-<<<<<<< HEAD
-=======
         mime_type: str | None = None,
->>>>>>> 5a8a671 (Support arbitrary file uploads and academic taxonomy management)
     ) -> File:
         parent = self.files.get(parent_file_id, university_id)
         if not parent:
@@ -135,11 +111,7 @@ class FileService:
         if self.files.get_by_hash(file_hash, university_id):
             raise AppError("This exact file already exists in the library", "DUPLICATE_FILE", 409)
 
-<<<<<<< HEAD
-        storage_key = f"{university_id}/{file_hash}.pdf"
-=======
         storage_key = self._storage_key(university_id, file_hash, filename)
->>>>>>> 5a8a671 (Support arbitrary file uploads and academic taxonomy management)
         self.storage.save(storage_key, io.BytesIO(raw_bytes))
 
         new_version = self.files.create(
@@ -148,11 +120,8 @@ class FileService:
             uploader_id=uploader_id,
             title=parent.title,
             description=parent.description,
-<<<<<<< HEAD
-=======
             original_filename=self._safe_filename(filename),
             mime_type=self._normalize_mime_type(mime_type, filename),
->>>>>>> 5a8a671 (Support arbitrary file uploads and academic taxonomy management)
             storage_key=storage_key,
             file_hash=file_hash,
             file_size_bytes=len(raw_bytes),
@@ -174,11 +143,6 @@ class FileService:
         file_obj = self._get_visible_or_404(file_id, university_id)
         file_obj.downloads_count += 1
 
-<<<<<<< HEAD
-        from datetime import datetime, timezone
-
-=======
->>>>>>> 5a8a671 (Support arbitrary file uploads and academic taxonomy management)
         from app.models.misc import DownloadLog
 
         self.db.add(
@@ -202,8 +166,6 @@ class FileService:
         return file_obj
 
     @staticmethod
-<<<<<<< HEAD
-=======
     def _safe_filename(filename: str) -> str:
         cleaned = re.sub(r"[^\w.()\- ]+", "_", (filename or "upload").strip())
         return cleaned[:512] or "upload"
@@ -223,7 +185,6 @@ class FileService:
         return candidate if re.fullmatch(r"[\w.+-]+/[\w.+-]+", candidate) else "application/octet-stream"
 
     @staticmethod
->>>>>>> 5a8a671 (Support arbitrary file uploads and academic taxonomy management)
     def _count_pdf_pages(raw_bytes: bytes) -> int:
         from PyPDF2 import PdfReader
 

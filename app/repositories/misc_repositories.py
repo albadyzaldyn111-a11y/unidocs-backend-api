@@ -78,11 +78,7 @@ class NotificationRepository:
 class SettingsRepository:
     DEFAULTS = {
         "max_file_size_mb": "50",
-<<<<<<< HEAD
-        "allowed_extensions": "pdf",
-=======
         "allowed_extensions": "*",
->>>>>>> 5a8a671 (Support arbitrary file uploads and academic taxonomy management)
         "page_count_check_enabled": "false",
         "min_page_count": "1",
         "review_lock_minutes": "15",

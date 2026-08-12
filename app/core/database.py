@@ -1,8 +1,4 @@
-<<<<<<< HEAD
-from sqlalchemy import create_engine
-=======
 from sqlalchemy import create_engine, inspect, text
->>>>>>> 5a8a671 (Support arbitrary file uploads and academic taxonomy management)
 from sqlalchemy.orm import DeclarativeBase, sessionmaker
 
 from app.core.config import get_settings
@@ -10,10 +6,6 @@ from app.core.config import get_settings
 settings = get_settings()
 
 connect_args = {"check_same_thread": False} if settings.DATABASE_URL.startswith("sqlite") else {}
-<<<<<<< HEAD
-
-=======
->>>>>>> 5a8a671 (Support arbitrary file uploads and academic taxonomy management)
 engine = create_engine(settings.DATABASE_URL, connect_args=connect_args, future=True)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine, future=True)
 
@@ -22,8 +14,6 @@ class Base(DeclarativeBase):
     pass
 
 
-<<<<<<< HEAD
-=======
 def ensure_schema() -> None:
     """Create tables and add the small set of backwards-compatible file columns.
 
@@ -53,7 +43,6 @@ def ensure_schema() -> None:
                 connection.execute(text(statement))
 
 
->>>>>>> 5a8a671 (Support arbitrary file uploads and academic taxonomy management)
 def get_db():
     db = SessionLocal()
     try:
