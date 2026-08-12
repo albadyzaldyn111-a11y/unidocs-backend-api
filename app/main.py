@@ -7,7 +7,8 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.api.routes import admin, auth, files, moderation, notifications, taxonomy, upload, upload_requests, users
 from app.core.config import get_settings
-from app.core.database import ensure_schema
+from app.core.database import SessionLocal, ensure_schema
+from app.core.seed import seed_data
 from app.core.errors import (
     AppError,
     app_error_handler,
@@ -52,6 +53,8 @@ app.include_router(users.router)
 @app.on_event("startup")
 def on_startup():
     ensure_schema()
+    with SessionLocal() as db:
+        seed_data(db)
 
 
 @app.get("/health")
