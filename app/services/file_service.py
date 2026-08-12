@@ -43,7 +43,14 @@ class FileService:
         raw_bytes: bytes,
         mime_type: str | None = None,
     ) -> File:
-        subject = self.taxonomy.get_subject(subject_id, university_id)
+        # Check if uploader is admin to bypass university restriction
+        from app.models.enums import UserRole
+        from app.models.user import User
+        uploader = self.db.get(User, uploader_id)
+        is_admin = uploader and uploader.role == UserRole.ADMINISTRATOR
+        
+        lookup_uni = None if is_admin else university_id
+        subject = self.taxonomy.get_subject(subject_id, lookup_uni)
         if not subject:
             raise AppError("Subject not found for this university", "SUBJECT_NOT_FOUND", 404)
 
@@ -61,7 +68,7 @@ class FileService:
             validate_page_count(page_count, int(settings["min_page_count"]))
 
         file_hash = compute_sha256(raw_bytes)
-        existing = self.files.get_by_hash(file_hash, university_id)
+        existing = self.files.get_by_hash(file_hash, lookup_uni)
         if existing:
             raise AppError("This exact file already exists in the library", "DUPLICATE_FILE", 409)
 

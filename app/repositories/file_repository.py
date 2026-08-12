@@ -12,13 +12,17 @@ class FileRepository:
     def __init__(self, db: Session):
         self.db = db
 
-    def get(self, file_id: str, university_id: str) -> File | None:
-        return self.db.scalar(select(File).where(File.id == file_id, File.university_id == university_id))
+    def get(self, file_id: str, university_id: str | None) -> File | None:
+        stmt = select(File).where(File.id == file_id)
+        if university_id:
+            stmt = stmt.where(File.university_id == university_id)
+        return self.db.scalar(stmt)
 
-    def get_by_hash(self, file_hash: str, university_id: str) -> File | None:
-        return self.db.scalar(
-            select(File).where(File.file_hash == file_hash, File.university_id == university_id)
-        )
+    def get_by_hash(self, file_hash: str, university_id: str | None) -> File | None:
+        stmt = select(File).where(File.file_hash == file_hash)
+        if university_id:
+            stmt = stmt.where(File.university_id == university_id)
+        return self.db.scalar(stmt)
 
     def create(self, **kwargs) -> File:
         file_obj = File(**kwargs)
@@ -60,9 +64,11 @@ class FileRepository:
         return items, total
 
     def list_by_uploader(
-        self, uploader_id: str, university_id: str, status: FileStatus | None = None
+        self, uploader_id: str, university_id: str | None, status: FileStatus | None = None
     ) -> list[File]:
-        stmt = select(File).where(File.uploader_id == uploader_id, File.university_id == university_id)
+        stmt = select(File).where(File.uploader_id == uploader_id)
+        if university_id:
+            stmt = stmt.where(File.university_id == university_id)
         if status:
             stmt = stmt.where(File.status == status)
         return list(self.db.scalars(stmt.order_by(File.created_at.desc())))

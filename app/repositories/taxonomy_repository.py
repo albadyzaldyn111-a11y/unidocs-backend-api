@@ -46,7 +46,8 @@ class TaxonomyRepository:
             self.db.scalars(select(Subject).where(Subject.level_id == level_id, Subject.university_id == university_id))
         )
 
-    def get_subject(self, subject_id: str, university_id: str) -> Subject | None:
-        return self.db.scalar(
-            select(Subject).where(Subject.id == subject_id, Subject.university_id == university_id)
-        )
+    def get_subject(self, subject_id: str, university_id: str | None) -> Subject | None:
+        stmt = select(Subject).where(Subject.id == subject_id)
+        if university_id:
+            stmt = stmt.where(Subject.university_id == university_id)
+        return self.db.scalar(stmt)
