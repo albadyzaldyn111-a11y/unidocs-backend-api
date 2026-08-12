@@ -67,6 +67,12 @@ def require_roles(*roles: UserRole):
 require_student_or_above = require_roles(
     UserRole.STUDENT, UserRole.VERIFIED_UPLOADER, UserRole.MODERATOR, UserRole.ADMINISTRATOR
 )
+<<<<<<< HEAD
 require_uploader = require_roles(UserRole.VERIFIED_UPLOADER, UserRole.MODERATOR, UserRole.ADMINISTRATOR)
+=======
+require_uploader = require_roles(
+    UserRole.STUDENT, UserRole.VERIFIED_UPLOADER, UserRole.MODERATOR, UserRole.ADMINISTRATOR
+)
+>>>>>>> 5a8a671 (Support arbitrary file uploads and academic taxonomy management)
 require_moderator = require_roles(UserRole.MODERATOR, UserRole.ADMINISTRATOR)
 require_admin = require_roles(UserRole.ADMINISTRATOR)

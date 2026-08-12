@@ -7,7 +7,11 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.api.routes import admin, auth, files, moderation, notifications, taxonomy, upload, upload_requests, users
 from app.core.config import get_settings
+<<<<<<< HEAD
 from app.core.database import Base, engine
+=======
+from app.core.database import ensure_schema
+>>>>>>> 5a8a671 (Support arbitrary file uploads and academic taxonomy management)
 from app.core.errors import (
     AppError,
     app_error_handler,
@@ -51,9 +55,13 @@ app.include_router(users.router)
 
 @app.on_event("startup")
 def on_startup():
+<<<<<<< HEAD
     # In production, use Alembic migrations instead of create_all.
     if settings.ENV == "development":
         Base.metadata.create_all(bind=engine)
+=======
+    ensure_schema()
+>>>>>>> 5a8a671 (Support arbitrary file uploads and academic taxonomy management)
 
 
 @app.get("/health")

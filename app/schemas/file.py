@@ -12,6 +12,11 @@ class FileOut(BaseModel):
     uploader_id: str
     title: str
     description: str | None
+<<<<<<< HEAD
+=======
+    original_filename: str
+    mime_type: str
+>>>>>>> 5a8a671 (Support arbitrary file uploads and academic taxonomy management)
     file_hash: str
     file_size_bytes: int
     status: FileStatus
@@ -28,6 +33,11 @@ class FileOut(BaseModel):
 class FileListItem(BaseModel):
     id: str
     title: str
+<<<<<<< HEAD
+=======
+    original_filename: str
+    mime_type: str
+>>>>>>> 5a8a671 (Support arbitrary file uploads and academic taxonomy management)
     subject_id: str
     status: FileStatus
     file_size_bytes: int

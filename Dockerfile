@@ -15,4 +15,8 @@ RUN mkdir -p /app/storage
 
 EXPOSE 8000
 
+<<<<<<< HEAD
 CMD python -m app.seed_admin && uvicorn app.main:app --host 0.0.0.0 --port 8000
+=======
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+>>>>>>> 5a8a671 (Support arbitrary file uploads and academic taxonomy management)

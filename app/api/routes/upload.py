@@ -32,8 +32,14 @@ async def upload_file(
         subject_id=subject_id,
         title=title,
         description=description,
+<<<<<<< HEAD
         filename=file.filename or "upload.pdf",
         raw_bytes=raw_bytes,
+=======
+        filename=file.filename or "upload",
+        raw_bytes=raw_bytes,
+        mime_type=file.content_type,
+>>>>>>> 5a8a671 (Support arbitrary file uploads and academic taxonomy management)
     )
     return result
 
@@ -52,8 +58,14 @@ async def upload_new_version(
         uploader_id=current_user.id,
         university_id=current_user.university_id,
         parent_file_id=file_id,
+<<<<<<< HEAD
         filename=file.filename or "upload.pdf",
         raw_bytes=raw_bytes,
+=======
+        filename=file.filename or "upload",
+        raw_bytes=raw_bytes,
+        mime_type=file.content_type,
+>>>>>>> 5a8a671 (Support arbitrary file uploads and academic taxonomy management)
     )
     return result
 

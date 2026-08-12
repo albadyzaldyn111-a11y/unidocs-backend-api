@@ -17,7 +17,11 @@ class Settings(BaseSettings):
     DEBUG: bool = True
 
     # Database
+<<<<<<< HEAD
     DATABASE_URL: str = "sqlite:///./storage/unidocs.db"
+=======
+    DATABASE_URL: str = "sqlite:///./unidocs_dev.db"
+>>>>>>> 5a8a671 (Support arbitrary file uploads and academic taxonomy management)
 
     # Security
     SECRET_KEY: str = "CHANGE_ME_IN_PRODUCTION"
@@ -29,7 +33,11 @@ class Settings(BaseSettings):
     STORAGE_BACKEND: str = "local"  # local | s3
     STORAGE_PATH: str = "./storage"
     MAX_FILE_SIZE_MB: int = 50
+<<<<<<< HEAD
     ALLOWED_EXTENSIONS: List[str] = ["pdf"]
+=======
+    ALLOWED_EXTENSIONS: List[str] = ["*"]
+>>>>>>> 5a8a671 (Support arbitrary file uploads and academic taxonomy management)
 
     # Moderation
     REVIEW_LOCK_MINUTES: int = 15
@@ -44,8 +52,13 @@ class Settings(BaseSettings):
     CORS_ORIGINS: List[str] = ["*"]
 
     # Initial admin (used only by seed_admin CLI, never committed with real values)
+<<<<<<< HEAD
     INITIAL_ADMIN_EMAIL: str = "admin@unidocs.com"
     INITIAL_ADMIN_PASSWORD: str = "admin123456"
+=======
+    INITIAL_ADMIN_EMAIL: str = "admin@unidocs.local"
+    INITIAL_ADMIN_PASSWORD: str = ""
+>>>>>>> 5a8a671 (Support arbitrary file uploads and academic taxonomy management)
 
 
 @lru_cache

@@ -1,10 +1,20 @@
+<<<<<<< HEAD
+=======
+import mimetypes
+from urllib.parse import quote
+
+>>>>>>> 5a8a671 (Support arbitrary file uploads and academic taxonomy management)
 from fastapi import APIRouter, Depends, Query
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.core.errors import AppError
+<<<<<<< HEAD
 from app.middleware.auth import CurrentUser, get_current_user, get_optional_user
+=======
+from app.middleware.auth import CurrentUser, get_optional_user
+>>>>>>> 5a8a671 (Support arbitrary file uploads and academic taxonomy management)
 from app.models.enums import FileStatus
 from app.repositories.file_repository import FileRepository
 from app.schemas.file import FileListItem, FileOut, PaginatedFiles
@@ -39,12 +49,30 @@ def get_file(file_id: str, university_id: str, db: Session = Depends(get_db)):
     return file_obj
 
 
+<<<<<<< HEAD
+=======
+def _content_type(file_obj) -> str:
+    return file_obj.mime_type or mimetypes.guess_type(file_obj.original_filename)[0] or "application/octet-stream"
+
+
+def _content_disposition(filename: str, inline: bool) -> str:
+    safe_name = filename.replace('"', "_").replace("\r", "_").replace("\n", "_")
+    disposition = "inline" if inline else "attachment"
+    return f"{disposition}; filename*=UTF-8''{quote(safe_name)}"
+
+
+>>>>>>> 5a8a671 (Support arbitrary file uploads and academic taxonomy management)
 @router.get("/{file_id}/preview")
 def preview_file(file_id: str, university_id: str, db: Session = Depends(get_db)):
     service = FileService(db)
     file_obj = service.register_view(file_id, university_id)
     stream = service.open_stream(file_obj)
+<<<<<<< HEAD
     return StreamingResponse(stream, media_type="application/pdf")
+=======
+    headers = {"Content-Disposition": _content_disposition(file_obj.original_filename, inline=True)}
+    return StreamingResponse(stream, media_type=_content_type(file_obj), headers=headers)
+>>>>>>> 5a8a671 (Support arbitrary file uploads and academic taxonomy management)
 
 
 @router.get("/{file_id}/download")
@@ -57,5 +85,10 @@ def download_file(
     service = FileService(db)
     file_obj = service.register_download(file_id, university_id, current_user.id if current_user else None)
     stream = service.open_stream(file_obj)
+<<<<<<< HEAD
     headers = {"Content-Disposition": f'attachment; filename="{file_obj.title}.pdf"'}
     return StreamingResponse(stream, media_type="application/pdf", headers=headers)
+=======
+    headers = {"Content-Disposition": _content_disposition(file_obj.original_filename, inline=False)}
+    return StreamingResponse(stream, media_type=_content_type(file_obj), headers=headers)
+>>>>>>> 5a8a671 (Support arbitrary file uploads and academic taxonomy management)
