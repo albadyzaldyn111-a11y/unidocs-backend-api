@@ -426,3 +426,26 @@ def delete_subject(subject_id: str, current_user: CurrentUser = Depends(require_
     db.commit()
     AuditService(db).log(current_user.id, "DELETE_SUBJECT", "subject", subject_id, subject.name)
     return {"success": True, "message": "Subject deleted"}
+
+
+@router.put("/files/{file_id}")
+def update_file(
+    file_id: str,
+    title: str | None = Query(None),
+    description: str | None = Query(None),
+    current_user: CurrentUser = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    from app.models.file import File
+    file_obj = db.get(File, file_id)
+    if not file_obj:
+        raise AppError("File not found", "FILE_NOT_FOUND", 404)
+    
+    if title is not None:
+        file_obj.title = title
+    if description is not None:
+        file_obj.description = description
+        
+    db.commit()
+    AuditService(db).log(current_user.id, "UPDATE_FILE", "file", file_id, file_obj.title)
+    return {"success": True, "message": "File updated"}

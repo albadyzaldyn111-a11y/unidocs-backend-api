@@ -5,7 +5,7 @@ from app.core.config import get_settings
 from app.core.database import get_db
 from app.middleware.auth import CurrentUser, require_uploader
 from app.middleware.rate_limit import limiter
-from app.models.enums import FileStatus
+from app.models.enums import FileStatus, UserRole
 from app.repositories.file_repository import FileRepository
 from app.schemas.file import FileListItem, FileOut
 from app.services.file_service import FileService
