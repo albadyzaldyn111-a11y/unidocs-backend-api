@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from slowapi.errors import RateLimitExceeded
@@ -7,7 +7,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.api.routes import admin, auth, files, moderation, notifications, taxonomy, upload, upload_requests, users
 from app.core.config import get_settings
-from app.core.database import SessionLocal, ensure_schema
+from app.core.database import SessionLocal, ensure_schema, get_db
 from app.core.seed import seed_data
 from app.core.errors import (
     AppError,
@@ -58,5 +58,16 @@ def on_startup():
 
 
 @app.get("/health")
-def health():
-    return {"success": True, "message": "UniDocs API is running"}
+def health(db: SessionLocal = Depends(get_db)):
+    try:
+        from sqlalchemy import text
+        db.execute(text("SELECT 1"))
+        db_status = "connected"
+    except Exception as e:
+        db_status = f"error: {str(e)}"
+    
+    return {
+        "success": True, 
+        "message": "UniDocs API is running",
+        "database": db_status
+    }
