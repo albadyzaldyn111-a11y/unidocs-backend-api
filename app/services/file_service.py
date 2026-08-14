@@ -60,7 +60,7 @@ class FileService:
 
         validate_extension(filename, allowed)
         validate_size(len(raw_bytes), max_mb)
-        validate_magic_bytes(raw_bytes[:5])
+        # validate_magic_bytes(raw_bytes[:5])
 
         # extension = self._extension(filename)
         # if settings.get("page_count_check_enabled") == "true" and extension == "pdf":
@@ -112,7 +112,7 @@ class FileService:
         settings = self.settings.get_all()
         validate_extension(filename, settings["allowed_extensions"].split(","))
         validate_size(len(raw_bytes), int(settings["max_file_size_mb"]))
-        validate_magic_bytes(raw_bytes[:5])
+        # validate_magic_bytes(raw_bytes[:5])
 
         file_hash = compute_sha256(raw_bytes)
         if self.files.get_by_hash(file_hash, university_id):
