@@ -23,8 +23,8 @@ settings = get_settings()
 
 app = FastAPI(title=settings.APP_NAME, debug=settings.DEBUG)
 
-# app.state.limiter = limiter
-# app.add_middleware(SlowAPIMiddleware)
+app.state.limiter = limiter
+app.add_middleware(SlowAPIMiddleware)
 
 app.add_middleware(
     CORSMiddleware,
@@ -37,7 +37,7 @@ app.add_middleware(
 app.add_exception_handler(AppError, app_error_handler)
 app.add_exception_handler(StarletteHTTPException, http_exception_handler)
 app.add_exception_handler(RequestValidationError, validation_exception_handler)
-# app.add_exception_handler(RateLimitExceeded, lambda r, e: app_error_handler(r, AppError("Too many requests", "RATE_LIMITED", 429)))
+app.add_exception_handler(RateLimitExceeded, lambda r, e: app_error_handler(r, AppError("Too many requests", "RATE_LIMITED", 429)))
 app.add_exception_handler(Exception, unhandled_exception_handler)
 
 app.include_router(auth.router)
