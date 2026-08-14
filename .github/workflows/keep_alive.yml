@@ -1,0 +1,15 @@
+name: Keep Render Alive 24/7
+
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Ping Request
+        run: |
+          curl -s https://unidocs-backend-api.onrender.com/health
+          echo "Ping sent successfully at $(date)"
