@@ -8,6 +8,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from app.api.routes import admin, auth, files, moderation, notifications, taxonomy, upload, upload_requests, users
 from app.core.config import get_settings
 from app.core.database import SessionLocal, ensure_schema, get_db
+from sqlalchemy.orm import Session
 from app.core.seed import seed_data
 from app.core.errors import (
     AppError,
@@ -57,8 +58,12 @@ def on_startup():
         seed_data(db)
 
 
+@app.get("/ping")
+def ping():
+    return {"ping": "pong"}
+
 @app.get("/health")
-def health(db: SessionLocal = Depends(get_db)):
+def health(db: Session = Depends(get_db)):
     try:
         from sqlalchemy import text
         db.execute(text("SELECT 1"))
