@@ -62,10 +62,10 @@ class FileService:
         validate_size(len(raw_bytes), max_mb)
         validate_magic_bytes(raw_bytes[:5])
 
-        extension = self._extension(filename)
-        if settings.get("page_count_check_enabled") == "true" and extension == "pdf":
-            page_count = self._count_pdf_pages(raw_bytes)
-            validate_page_count(page_count, int(settings["min_page_count"]))
+        # extension = self._extension(filename)
+        # if settings.get("page_count_check_enabled") == "true" and extension == "pdf":
+        #     page_count = self._count_pdf_pages(raw_bytes)
+        #     validate_page_count(page_count, int(settings["min_page_count"]))
 
         file_hash = compute_sha256(raw_bytes)
         existing = self.files.get_by_hash(file_hash, lookup_uni)

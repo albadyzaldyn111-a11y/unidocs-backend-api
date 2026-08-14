@@ -58,6 +58,7 @@ class LevelUpdate(BaseModel):
     name: str | None = None
     name_en: str | None = None
     order_index: int | None = None
+    is_active: bool | None = None
 
 
 class SubjectUpdate(BaseModel):
