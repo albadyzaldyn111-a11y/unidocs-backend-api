@@ -26,10 +26,15 @@ class Settings(BaseSettings):
     REFRESH_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 30
 
     # File storage
-    STORAGE_BACKEND: str = "local"  # local | s3
+    STORAGE_BACKEND: str = "local"  # local | s3 | supabase
     STORAGE_PATH: str = "./storage"
     MAX_FILE_SIZE_MB: int = 50
     ALLOWED_EXTENSIONS: List[str] = ["*"]
+
+    # Supabase (Optional, for permanent storage)
+    SUPABASE_URL: str | None = None
+    SUPABASE_KEY: str | None = None
+    SUPABASE_BUCKET: str = "unidocs"
 
     # Moderation
     REVIEW_LOCK_MINUTES: int = 15
