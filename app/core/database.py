@@ -23,10 +23,13 @@ if not settings.DATABASE_URL.startswith("sqlite"):
         "pool_pre_ping": True,
     })
 
-# Remove pgbouncer query param if present, as psycopg2 doesn't like it in the DSN
+# Clean the database URL to remove any problematic query parameters like pgbouncer
 db_url = settings.DATABASE_URL
-if "pgbouncer=true" in db_url:
-    db_url = db_url.replace("pgbouncer=true", "").replace("??", "?").rstrip("?").rstrip("&")
+if "?" in db_url:
+    base_url, query = db_url.split("?", 1)
+    # Filter out pgbouncer and other non-standard params for psycopg2
+    params = [p for p in query.split("&") if not p.startswith("pgbouncer=")]
+    db_url = base_url + ("?" + "&".join(params) if params else "")
 
 engine = create_engine(db_url, **engine_kwargs)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine, future=True)
