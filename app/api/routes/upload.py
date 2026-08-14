@@ -10,11 +10,11 @@ from app.repositories.file_repository import FileRepository
 from app.schemas.file import FileListItem, FileOut
 from app.services.file_service import FileService
 
-router = APIRouter(prefix="/api", tags=["upload"])
+router = APIRouter(prefix="/api/files", tags=["upload"])
 settings = get_settings()
 
 
-@router.post("/files/upload", response_model=FileOut, status_code=201)
+@router.post("/upload", response_model=FileOut, status_code=201)
 @limiter.limit(settings.RATE_LIMIT_UPLOAD)
 async def upload_file(
     request: Request,
@@ -45,7 +45,7 @@ async def upload_file(
     return result
 
 
-@router.post("/files/{file_id}/versions", response_model=FileOut, status_code=201)
+@router.post("/{file_id}/versions", response_model=FileOut, status_code=201)
 @limiter.limit(settings.RATE_LIMIT_UPLOAD)
 async def upload_new_version(
     request: Request,
@@ -72,7 +72,7 @@ async def upload_new_version(
     return result
 
 
-@router.get("/files/mine/list", response_model=list[FileListItem])
+@router.get("/mine/list", response_model=list[FileListItem])
 def my_files(
     status: FileStatus | None = None,
     current_user: CurrentUser = Depends(require_uploader),
