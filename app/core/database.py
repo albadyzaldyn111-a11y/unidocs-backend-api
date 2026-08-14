@@ -23,7 +23,12 @@ if not settings.DATABASE_URL.startswith("sqlite"):
         "pool_pre_ping": True,
     })
 
-engine = create_engine(settings.DATABASE_URL, **engine_kwargs)
+# Remove pgbouncer query param if present, as psycopg2 doesn't like it in the DSN
+db_url = settings.DATABASE_URL
+if "pgbouncer=true" in db_url:
+    db_url = db_url.replace("pgbouncer=true", "").replace("??", "?").rstrip("?").rstrip("&")
+
+engine = create_engine(db_url, **engine_kwargs)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine, future=True)
 
 
