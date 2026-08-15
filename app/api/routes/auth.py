@@ -5,6 +5,7 @@ from app.core.config import get_settings
 from app.core.database import get_db
 from app.middleware.auth import CurrentUser, get_current_user
 from app.middleware.rate_limit import limiter
+from app.models.enums import UserRole
 from app.repositories.user_repository import UserRepository
 from app.schemas.auth import LoginRequest, RegisterRequest, TokenResponse, UserOut
 from app.services.auth_service import AuthService
