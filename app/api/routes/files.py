@@ -65,8 +65,18 @@ def download_file(
     service = FileService(db)
     file_obj = service.register_download(file_id, university_id, current_user.id if current_user else None)
     stream = service.open_stream(file_obj)
+    
     extension = Path(file_obj.storage_key).suffix or ".bin"
-    filename = f"{file_obj.title}{extension}".replace('"', "").replace("\r", "").replace("\n", "")
-    media_type = mimetypes.guess_type(filename)[0] or "application/octet-stream"
-    headers = {"Content-Disposition": f'attachment; filename="{filename}"'}
+    # Clean filename and handle non-latin characters for Content-Disposition
+    from urllib.parse import quote
+    
+    base_filename = f"{file_obj.title}{extension}".replace('"', "").replace("\r", "").replace("\n", "")
+    encoded_filename = quote(base_filename)
+    
+    media_type = mimetypes.guess_type(base_filename)[0] or "application/octet-stream"
+    
+    # Standard header with RFC 5987 support for UTF-8 filenames
+    headers = {
+        "Content-Disposition": f"attachment; filename*=UTF-8''{encoded_filename}"
+    }
     return StreamingResponse(stream, media_type=media_type, headers=headers)
