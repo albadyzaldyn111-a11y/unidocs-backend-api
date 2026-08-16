@@ -7,6 +7,8 @@ from app.repositories.file_repository import FileRepository
 from app.repositories.misc_repositories import SettingsRepository
 from app.repositories.user_repository import UserRepository
 from app.services.audit_service import AuditService
+from app.services.notification_service import NotificationService
+from app.models.enums import NotificationType
 
 
 class AdminService:
@@ -16,6 +18,7 @@ class AdminService:
         self.files = FileRepository(db)
         self.settings = SettingsRepository(db)
         self.audit = AuditService(db)
+        self.notifications = NotificationService(db)
 
     def stats(self, university_id: str) -> dict:
         file_stats = self.files.stats(university_id)
@@ -37,6 +40,17 @@ class AdminService:
     def set_user_active(self, admin_id: str, user_id: str, university_id: str | None, is_active: bool):
         user = self._managed_user(user_id, university_id)
         user.is_active = is_active
+        
+        status_label = "تفعيل" if is_active else "تعطيل"
+        self.notifications.notify(
+            user.id,
+            NotificationType.ACCOUNT_STATUS_CHANGED,
+            f"تم {status_label} حسابك",
+            f"قامت الإدارة بـ {status_label} حسابك في المنصة.",
+            "user",
+            user.id
+        )
+        
         self.audit.log(admin_id, "DEACTIVATE_USER" if not is_active else "ACTIVATE_USER", "user", user.id)
         self.db.commit()
         return user
@@ -44,6 +58,22 @@ class AdminService:
     def set_user_role(self, admin_id: str, user_id: str, university_id: str | None, role: UserRole):
         user = self._managed_user(user_id, university_id)
         user.role = role
+        
+        role_labels = {
+            UserRole.STUDENT: "طالب",
+            UserRole.VERIFIED_UPLOADER: "رافع ملفات معتمد",
+            UserRole.MODERATOR: "مشرف",
+            UserRole.ADMINISTRATOR: "مسؤول نظام"
+        }
+        self.notifications.notify(
+            user.id,
+            NotificationType.ROLE_CHANGED,
+            "تغيير رتبة الحساب",
+            f"تم تغيير رتبة حسابك إلى: {role_labels.get(role, role.value)}",
+            "user",
+            user.id
+        )
+        
         self.audit.log(admin_id, "CHANGE_ROLE", "user", user.id, role.value)
         self.db.commit()
         return user

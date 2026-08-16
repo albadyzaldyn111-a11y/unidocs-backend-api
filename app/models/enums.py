@@ -23,9 +23,12 @@ class UploadRequestStatus(str, enum.Enum):
 
 
 class NotificationType(str, enum.Enum):
+    SYSTEM = "system"
     NEW_FILE_AVAILABLE = "new_file_available"
     FILE_APPROVED = "file_approved"
     FILE_REJECTED = "file_rejected"
     UPLOAD_REQUEST_APPROVED = "upload_request_approved"
     UPLOAD_REQUEST_REJECTED = "upload_request_rejected"
     NEW_VERSION_APPROVED = "new_version_approved"
+    ROLE_CHANGED = "role_changed"
+    ACCOUNT_STATUS_CHANGED = "account_status_changed"
