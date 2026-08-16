@@ -76,7 +76,9 @@ def download_file(
     media_type = mimetypes.guess_type(base_filename)[0] or "application/octet-stream"
     
     # Standard header with RFC 5987 support for UTF-8 filenames
+    # We also provide a safe ASCII fallback filename for basic latin-1 compatibility
+    safe_ascii_filename = base_filename.encode("ascii", "ignore").decode("ascii") or "file"
     headers = {
-        "Content-Disposition": f"attachment; filename*=UTF-8''{encoded_filename}"
+        "Content-Disposition": f'attachment; filename="{safe_ascii_filename}"; filename*=UTF-8\'\'{encoded_filename}'
     }
     return StreamingResponse(stream, media_type=media_type, headers=headers)
