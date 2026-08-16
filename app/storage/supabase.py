@@ -29,6 +29,11 @@ class SupabaseStorage(StorageService):
         safe_bucket = quote(self.bucket, safe="")
         return f"{self.base_url}/storage/v1/object/{safe_bucket}/{safe_key}"
 
+    def _download_url(self, key: str) -> str:
+        safe_key = quote(key.lstrip("/"), safe="/")
+        safe_bucket = quote(self.bucket, safe="")
+        return f"{self.base_url}/storage/v1/object/authenticated/{safe_bucket}/{safe_key}"
+
     def _headers(self, content_type: str | None = None) -> dict[str, str]:
         headers = {
             "Authorization": f"Bearer {self.key}",
@@ -59,7 +64,7 @@ class SupabaseStorage(StorageService):
     def open(self, key: str) -> BinaryIO:
         try:
             with httpx.Client(timeout=self.timeout) as client:
-                response = client.get(self._object_url(key), headers=self._headers())
+                response = client.get(self._download_url(key), headers=self._headers())
         except httpx.HTTPError as exc:
             raise RuntimeError(f"Supabase download connection failed: {exc}") from exc
 

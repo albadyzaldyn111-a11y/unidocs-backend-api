@@ -4,7 +4,7 @@ This is the real security boundary — Flutter route guards are UX only.
 """
 from dataclasses import dataclass
 
-from fastapi import Depends, Header
+from fastapi import Depends, Header, Query
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
@@ -23,20 +23,20 @@ class CurrentUser:
 
 def get_current_user(
     authorization: str | None = Header(default=None),
-    token_query: str | None = None,
+    token: str | None = Query(default=None),
     db: Session = Depends(get_db),
 ) -> CurrentUser:
-    token = None
+    auth_token = None
     if authorization and authorization.lower().startswith("bearer "):
-        token = authorization.split(" ", 1)[1]
-    elif token_query:
-        token = token_query
+        auth_token = authorization.split(" ", 1)[1]
+    elif token:
+        auth_token = token
 
-    if not token:
+    if not auth_token:
         raise AppError("Authentication required", "UNAUTHENTICATED", 401)
 
     try:
-        payload = decode_token(token)
+        payload = decode_token(auth_token)
     except ValueError as exc:
         raise AppError("Invalid or expired token", "INVALID_TOKEN", 401) from exc
 
@@ -50,7 +50,7 @@ def get_current_user(
 
 def get_optional_user(
     authorization: str | None = Header(default=None),
-    token: str | None = None,
+    token: str | None = Query(default=None),
     db: Session = Depends(get_db),
 ) -> CurrentUser | None:
     """Same as get_current_user but returns None instead of raising —
@@ -59,7 +59,7 @@ def get_optional_user(
     if not authorization and not token:
         return None
     try:
-        return get_current_user(authorization=authorization, token_query=token, db=db)
+        return get_current_user(authorization=authorization, token=token, db=db)
     except AppError:
         return None
 
