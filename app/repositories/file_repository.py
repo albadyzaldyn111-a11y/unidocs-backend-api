@@ -15,6 +15,9 @@ class FileRepository:
     def get(self, file_id: str, university_id: str) -> File | None:
         return self.db.scalar(select(File).where(File.id == file_id, File.university_id == university_id))
 
+    def get_by_id_only(self, file_id: str) -> File | None:
+        return self.db.get(File, file_id)
+
     def get_by_hash(self, file_hash: str, university_id: str) -> File | None:
         return self.db.scalar(
             select(File).where(File.file_hash == file_hash, File.university_id == university_id)

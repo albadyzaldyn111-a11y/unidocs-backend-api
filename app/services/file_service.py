@@ -51,9 +51,15 @@ class FileService:
         mime_type: str | None,
         raw_bytes: bytes,
     ) -> File:
-        subject = self.taxonomy.get_subject(subject_id, university_id)
+        # Use subject_id to find the actual university it belongs to, 
+        # allowing cross-university uploads for admins/authorized uploaders 
+        # if the UI allows selecting any university.
+        subject = self.taxonomy.get_subject_by_id(subject_id)
         if not subject:
-            raise AppError("Subject not found for this university", "SUBJECT_NOT_FOUND", 404)
+            raise AppError("Subject not found", "SUBJECT_NOT_FOUND", 404)
+        
+        # Override university_id with the one from the subject to ensure data integrity
+        target_university_id = subject.university_id
 
         settings = self.settings.get_all()
         max_mb = int(settings["max_file_size_mb"])
@@ -70,11 +76,11 @@ class FileService:
 
         file_hash = compute_sha256(raw_bytes)
 
-        existing = self.files.get_by_hash(file_hash, university_id)
+        existing = self.files.get_by_hash(file_hash, target_university_id)
         if existing:
             raise AppError("This exact file already exists in the library", "DUPLICATE_FILE", 409)
 
-        storage_key = f"{university_id}/{file_hash}.{extension or 'bin'}"
+        storage_key = f"{target_university_id}/{file_hash}.{extension or 'bin'}"
         try:
             self._require_storage().save(storage_key, io.BytesIO(raw_bytes))
         except Exception as exc:
@@ -83,7 +89,7 @@ class FileService:
             raise AppError(f"File storage is temporarily unavailable: {detail}", "STORAGE_UNAVAILABLE", 503) from exc
 
         file_obj = self.files.create(
-            university_id=university_id,
+            university_id=target_university_id,
             subject_id=subject_id,
             uploader_id=uploader_id,
             title=title,
@@ -110,9 +116,12 @@ class FileService:
         mime_type: str | None,
         raw_bytes: bytes,
     ) -> File:
-        parent = self.files.get(parent_file_id, university_id)
+        parent = self.files.get_by_id_only(parent_file_id)
         if not parent:
             raise AppError("Original file not found", "FILE_NOT_FOUND", 404)
+        
+        target_university_id = parent.university_id
+
         if parent.uploader_id != uploader_id:
             raise AppError("Only the original uploader can add a new version", "FORBIDDEN", 403)
 
@@ -124,10 +133,10 @@ class FileService:
         validate_magic_bytes(raw_bytes[:16], extension)
 
         file_hash = compute_sha256(raw_bytes)
-        if self.files.get_by_hash(file_hash, university_id):
+        if self.files.get_by_hash(file_hash, target_university_id):
             raise AppError("This exact file already exists in the library", "DUPLICATE_FILE", 409)
 
-        storage_key = f"{university_id}/{file_hash}.{extension or 'bin'}"
+        storage_key = f"{target_university_id}/{file_hash}.{extension or 'bin'}"
         try:
             self._require_storage().save(storage_key, io.BytesIO(raw_bytes))
         except Exception as exc:
@@ -136,7 +145,7 @@ class FileService:
             raise AppError(f"File storage is temporarily unavailable: {detail}", "STORAGE_UNAVAILABLE", 503) from exc
 
         new_version = self.files.create(
-            university_id=university_id,
+            university_id=target_university_id,
             subject_id=parent.subject_id,
             uploader_id=uploader_id,
             title=parent.title,

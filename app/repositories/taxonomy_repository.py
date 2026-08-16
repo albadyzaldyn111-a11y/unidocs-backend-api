@@ -50,3 +50,6 @@ class TaxonomyRepository:
         return self.db.scalar(
             select(Subject).where(Subject.id == subject_id, Subject.university_id == university_id)
         )
+
+    def get_subject_by_id(self, subject_id: str) -> Subject | None:
+        return self.db.get(Subject, subject_id)
