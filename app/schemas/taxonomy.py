@@ -23,7 +23,6 @@ class FacultyOut(BaseModel):
 
 class DepartmentOut(BaseModel):
     id: str
-    university_id: str
     faculty_id: str
     name: str
     name_en: str
@@ -34,7 +33,6 @@ class DepartmentOut(BaseModel):
 
 class LevelOut(BaseModel):
     id: str
-    university_id: str
     department_id: str
     name: str
     name_en: str
@@ -45,7 +43,6 @@ class LevelOut(BaseModel):
 
 class SubjectOut(BaseModel):
     id: str
-    university_id: str
     level_id: str
     name: str
     name_en: str

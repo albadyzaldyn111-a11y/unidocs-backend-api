@@ -22,12 +22,19 @@ class CurrentUser:
 
 
 def get_current_user(
-    authorization: str | None = Header(default=None), db: Session = Depends(get_db)
+    authorization: str | None = Header(default=None),
+    token_query: str | None = None,
+    db: Session = Depends(get_db),
 ) -> CurrentUser:
-    if not authorization or not authorization.lower().startswith("bearer "):
+    token = None
+    if authorization and authorization.lower().startswith("bearer "):
+        token = authorization.split(" ", 1)[1]
+    elif token_query:
+        token = token_query
+
+    if not token:
         raise AppError("Authentication required", "UNAUTHENTICATED", 401)
 
-    token = authorization.split(" ", 1)[1]
     try:
         payload = decode_token(token)
     except ValueError as exc:
@@ -42,15 +49,17 @@ def get_current_user(
 
 
 def get_optional_user(
-    authorization: str | None = Header(default=None), db: Session = Depends(get_db)
+    authorization: str | None = Header(default=None),
+    token: str | None = None,
+    db: Session = Depends(get_db),
 ) -> CurrentUser | None:
     """Same as get_current_user but returns None instead of raising —
     used for endpoints visitors may access anonymously while still
     attributing the action when a valid token is present (e.g. downloads)."""
-    if not authorization or not authorization.lower().startswith("bearer "):
+    if not authorization and not token:
         return None
     try:
-        return get_current_user(authorization=authorization, db=db)
+        return get_current_user(authorization=authorization, token_query=token, db=db)
     except AppError:
         return None
 
@@ -67,8 +76,6 @@ def require_roles(*roles: UserRole):
 require_student_or_above = require_roles(
     UserRole.STUDENT, UserRole.VERIFIED_UPLOADER, UserRole.MODERATOR, UserRole.ADMINISTRATOR
 )
-require_uploader = require_roles(
-    UserRole.VERIFIED_UPLOADER, UserRole.MODERATOR, UserRole.ADMINISTRATOR
-)
+require_uploader = require_roles(UserRole.VERIFIED_UPLOADER, UserRole.MODERATOR, UserRole.ADMINISTRATOR)
 require_moderator = require_roles(UserRole.MODERATOR, UserRole.ADMINISTRATOR)
 require_admin = require_roles(UserRole.ADMINISTRATOR)

@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from app.core.config import get_settings
 from app.core.errors import AppError
 from app.models.enums import FileStatus, NotificationType
+from app.models.misc import DownloadLog
 from app.repositories.file_repository import FileRepository
 from app.services.audit_service import AuditService
 from app.services.notification_service import NotificationService
@@ -68,6 +69,15 @@ class ModerationService:
             "file",
             file_obj.id,
         )
+        self.notifications.notify_university_users(
+            file_obj.university_id,
+            NotificationType.NEW_FILE_AVAILABLE,
+            "ملزمة جديدة متاحة",
+            f"تمت إضافة ملزمة «{file_obj.title}» إلى مكتبة جامعتك.",
+            "file",
+            file_obj.id,
+            exclude_user_id=file_obj.uploader_id,
+        )
         self.audit.log(moderator_id, "APPROVE_FILE", "file", file_obj.id)
         self.db.commit()
         return file_obj
@@ -101,6 +111,7 @@ class ModerationService:
         except Exception:
             pass  # storage cleanup failure should not block the audit-critical delete
         self.audit.log(moderator_id, "DELETE_FILE", "file", file_obj.id, "violating content")
+        self.db.query(DownloadLog).filter(DownloadLog.file_id == file_obj.id).delete(synchronize_session=False)
         self.db.delete(file_obj)
         self.db.commit()
 

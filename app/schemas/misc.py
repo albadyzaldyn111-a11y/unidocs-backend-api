@@ -30,6 +30,8 @@ class NotificationOut(BaseModel):
     title: str
     body: str | None
     is_read: bool
+    related_entity_type: str | None = None
+    related_entity_id: str | None = None
     created_at: datetime
 
     model_config = {"from_attributes": True}

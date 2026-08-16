@@ -1,6 +1,9 @@
 import io
+from datetime import datetime, timezone
 
 from app.models.enums import UserRole
+from app.models.file import File
+from app.models.misc import DownloadLog
 from app.models.user import User
 from tests.conftest import make_pdf_bytes
 
@@ -131,3 +134,57 @@ def test_moderation_lock_blocks_other_moderator(client, seed_taxonomy, db_sessio
     second_lock = client.post(f"/api/moderation/files/{file_id}/lock", headers={"Authorization": f"Bearer {mod2_token}"})
     assert second_lock.status_code == 409
     assert second_lock.json()["code"] == "FILE_LOCKED"
+
+
+def test_text_document_upload_success(client, seed_taxonomy, db_session):
+    ctx = seed_taxonomy()
+    _create_user(db_session, ctx["university"].id, "text-uploader@test.com", UserRole.VERIFIED_UPLOADER)
+    token = _login(client, "text-uploader@test.com")
+
+    response = client.post(
+        "/api/files/upload",
+        headers={"Authorization": f"Bearer {token}"},
+        data={"subject_id": ctx["subject"].id, "title": "Text Notes"},
+        files={"file": ("notes.txt", io.BytesIO(b"academic notes"), "text/plain")},
+    )
+
+    assert response.status_code == 201
+    assert response.json()["status"] == "pending"
+    stored_file = db_session.get(File, response.json()["id"])
+    assert stored_file is not None
+    assert stored_file.storage_key.endswith(".txt")
+
+
+def test_delete_file_removes_download_logs(client, seed_taxonomy, db_session):
+    ctx = seed_taxonomy()
+    uploader = _create_user(db_session, ctx["university"].id, "delete-uploader@test.com", UserRole.VERIFIED_UPLOADER)
+    moderator = _create_user(db_session, ctx["university"].id, "delete-mod@test.com", UserRole.MODERATOR)
+    uploader_token = _login(client, "delete-uploader@test.com")
+    moderator_token = _login(client, "delete-mod@test.com")
+
+    upload_resp = client.post(
+        "/api/files/upload",
+        headers={"Authorization": f"Bearer {uploader_token}"},
+        data={"subject_id": ctx["subject"].id, "title": "Delete check"},
+        files={"file": ("delete-check.txt", io.BytesIO(b"delete-check"), "text/plain")},
+    )
+    assert upload_resp.status_code == 201
+    file_id = upload_resp.json()["id"]
+
+    db_session.add(
+        DownloadLog(
+            file_id=file_id,
+            user_id=uploader.id,
+            university_id=ctx["university"].id,
+            created_at=datetime.now(timezone.utc),
+        )
+    )
+    db_session.commit()
+
+    delete_resp = client.delete(
+        f"/api/moderation/files/{file_id}",
+        headers={"Authorization": f"Bearer {moderator_token}"},
+    )
+    assert delete_resp.status_code == 200
+    assert db_session.get(File, file_id) is None
+    assert db_session.query(DownloadLog).filter(DownloadLog.file_id == file_id).count() == 0

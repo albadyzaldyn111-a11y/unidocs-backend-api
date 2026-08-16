@@ -11,6 +11,7 @@ from sqlalchemy.orm import sessionmaker
 
 from app.core.database import Base, get_db
 from app.main import app
+from app.middleware.rate_limit import limiter
 from app.models.taxonomy import Level, Department, Faculty, Subject, University
 
 TEST_DB_URL = "sqlite:///./test_unidocs.db"
@@ -35,6 +36,14 @@ def override_get_db():
 
 
 app.dependency_overrides[get_db] = override_get_db
+
+
+@pytest.fixture(autouse=True)
+def _disable_rate_limits_for_tests():
+    previous = limiter.enabled
+    limiter.enabled = False
+    yield
+    limiter.enabled = previous
 
 
 @pytest.fixture

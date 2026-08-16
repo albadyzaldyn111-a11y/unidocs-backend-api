@@ -1,6 +1,5 @@
 import io
-import mimetypes
-import re
+import logging
 from datetime import datetime, timezone
 
 from sqlalchemy.orm import Session
@@ -22,6 +21,9 @@ from app.services.file_validation import (
 from app.storage.factory import get_storage
 
 
+logger = logging.getLogger("unidocs.files")
+
+
 class FileService:
     def __init__(self, db: Session):
         self.db = db
@@ -29,7 +31,11 @@ class FileService:
         self.taxonomy = TaxonomyRepository(db)
         self.settings = SettingsRepository(db)
         self.audit = AuditService(db)
-        self.storage = get_storage()
+        try:
+            self.storage = get_storage()
+        except Exception:
+            logger.exception("File storage is not configured or unavailable")
+            self.storage = None
 
     def upload(
         self,
@@ -41,39 +47,36 @@ class FileService:
         description: str | None,
         filename: str,
         raw_bytes: bytes,
-        mime_type: str | None = None,
     ) -> File:
-        # Check if uploader is admin to bypass university restriction
-        from app.models.enums import UserRole
-        from app.models.user import User
-        uploader = self.db.get(User, uploader_id)
-        is_admin = uploader and uploader.role == UserRole.ADMINISTRATOR
-        
-        lookup_uni = None if is_admin else university_id
-        subject = self.taxonomy.get_subject(subject_id, lookup_uni)
+        subject = self.taxonomy.get_subject(subject_id, university_id)
         if not subject:
             raise AppError("Subject not found for this university", "SUBJECT_NOT_FOUND", 404)
 
         settings = self.settings.get_all()
         max_mb = int(settings["max_file_size_mb"])
-        allowed = settings["allowed_extensions"].split(",")
+        allowed = [item.strip().lower().lstrip(".") for item in settings["allowed_extensions"].split(",") if item.strip()]
+        extension = filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
 
         validate_extension(filename, allowed)
         validate_size(len(raw_bytes), max_mb)
-        # validate_magic_bytes(raw_bytes[:5])
+        validate_magic_bytes(raw_bytes[:16], extension)
 
-        # extension = self._extension(filename)
-        # if settings.get("page_count_check_enabled") == "true" and extension == "pdf":
-        #     page_count = self._count_pdf_pages(raw_bytes)
-        #     validate_page_count(page_count, int(settings["min_page_count"]))
+        if settings.get("page_count_check_enabled") == "true":
+            page_count = self._count_pdf_pages(raw_bytes)
+            validate_page_count(page_count, int(settings["min_page_count"]))
 
         file_hash = compute_sha256(raw_bytes)
-        existing = self.files.get_by_hash(file_hash, lookup_uni)
+
+        existing = self.files.get_by_hash(file_hash, university_id)
         if existing:
             raise AppError("This exact file already exists in the library", "DUPLICATE_FILE", 409)
 
-        storage_key = self._storage_key(university_id, file_hash, filename)
-        self.storage.save(storage_key, io.BytesIO(raw_bytes))
+        storage_key = f"{university_id}/{file_hash}.{extension or 'bin'}"
+        try:
+            self._require_storage().save(storage_key, io.BytesIO(raw_bytes))
+        except Exception as exc:
+            logger.exception("Storage upload failed for key=%s", storage_key)
+            raise AppError("File storage is temporarily unavailable", "STORAGE_UNAVAILABLE", 503) from exc
 
         file_obj = self.files.create(
             university_id=university_id,
@@ -81,8 +84,6 @@ class FileService:
             uploader_id=uploader_id,
             title=title,
             description=description,
-            original_filename=self._safe_filename(filename),
-            mime_type=self._normalize_mime_type(mime_type, filename),
             storage_key=storage_key,
             file_hash=file_hash,
             file_size_bytes=len(raw_bytes),
@@ -101,7 +102,6 @@ class FileService:
         parent_file_id: str,
         filename: str,
         raw_bytes: bytes,
-        mime_type: str | None = None,
     ) -> File:
         parent = self.files.get(parent_file_id, university_id)
         if not parent:
@@ -110,16 +110,22 @@ class FileService:
             raise AppError("Only the original uploader can add a new version", "FORBIDDEN", 403)
 
         settings = self.settings.get_all()
-        validate_extension(filename, settings["allowed_extensions"].split(","))
+        extension = filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
+        allowed = [item.strip().lower().lstrip(".") for item in settings["allowed_extensions"].split(",") if item.strip()]
+        validate_extension(filename, allowed)
         validate_size(len(raw_bytes), int(settings["max_file_size_mb"]))
-        # validate_magic_bytes(raw_bytes[:5])
+        validate_magic_bytes(raw_bytes[:16], extension)
 
         file_hash = compute_sha256(raw_bytes)
         if self.files.get_by_hash(file_hash, university_id):
             raise AppError("This exact file already exists in the library", "DUPLICATE_FILE", 409)
 
-        storage_key = self._storage_key(university_id, file_hash, filename)
-        self.storage.save(storage_key, io.BytesIO(raw_bytes))
+        storage_key = f"{university_id}/{file_hash}.{extension or 'bin'}"
+        try:
+            self._require_storage().save(storage_key, io.BytesIO(raw_bytes))
+        except Exception as exc:
+            logger.exception("Storage upload failed for version key=%s", storage_key)
+            raise AppError("File storage is temporarily unavailable", "STORAGE_UNAVAILABLE", 503) from exc
 
         new_version = self.files.create(
             university_id=university_id,
@@ -127,8 +133,6 @@ class FileService:
             uploader_id=uploader_id,
             title=parent.title,
             description=parent.description,
-            original_filename=self._safe_filename(filename),
-            mime_type=self._normalize_mime_type(mime_type, filename),
             storage_key=storage_key,
             file_hash=file_hash,
             file_size_bytes=len(raw_bytes),
@@ -150,6 +154,8 @@ class FileService:
         file_obj = self._get_visible_or_404(file_id, university_id)
         file_obj.downloads_count += 1
 
+        from datetime import datetime, timezone
+
         from app.models.misc import DownloadLog
 
         self.db.add(
@@ -164,32 +170,18 @@ class FileService:
         return file_obj
 
     def open_stream(self, file_obj: File):
-        return self.storage.open(file_obj.storage_key)
+        return self._require_storage().open(file_obj.storage_key)
+
+    def _require_storage(self):
+        if self.storage is None:
+            raise AppError("File storage is temporarily unavailable", "STORAGE_UNAVAILABLE", 503)
+        return self.storage
 
     def _get_visible_or_404(self, file_id: str, university_id: str) -> File:
         file_obj = self.files.get(file_id, university_id)
         if not file_obj or file_obj.status not in (FileStatus.APPROVED, FileStatus.ARCHIVED):
             raise AppError("File not found", "FILE_NOT_FOUND", 404)
         return file_obj
-
-    @staticmethod
-    def _safe_filename(filename: str) -> str:
-        cleaned = re.sub(r"[^\w.()\- ]+", "_", (filename or "upload").strip())
-        return cleaned[:512] or "upload"
-
-    @staticmethod
-    def _extension(filename: str) -> str:
-        return filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
-
-    @classmethod
-    def _storage_key(cls, university_id: str, file_hash: str, filename: str) -> str:
-        extension = cls._extension(filename)
-        return f"{university_id}/{file_hash}{('.' + extension) if extension else ''}"
-
-    @staticmethod
-    def _normalize_mime_type(mime_type: str | None, filename: str) -> str:
-        candidate = (mime_type or mimetypes.guess_type(filename)[0] or "application/octet-stream").split(";", 1)[0]
-        return candidate if re.fullmatch(r"[\w.+-]+/[\w.+-]+", candidate) else "application/octet-stream"
 
     @staticmethod
     def _count_pdf_pages(raw_bytes: bytes) -> int:

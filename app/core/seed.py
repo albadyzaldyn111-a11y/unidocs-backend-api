@@ -1,11 +1,13 @@
 import uuid
 from sqlalchemy.orm import Session
+from app.core.config import get_settings
 from app.core.security import hash_password
 from app.models.user import User
 from app.models.taxonomy import University, Faculty, Department, Level, Subject
 from app.models.enums import UserRole
 
 def seed_data(db: Session):
+    settings = get_settings()
     # 1. Default University (Legacy)
     uni_model = db.query(University).filter(University.name == "جامعة نموذجية").first()
     if not uni_model:
@@ -89,13 +91,15 @@ def seed_data(db: Session):
         db.flush()
 
     # 7. Ensure Admin account exists
-    admin = db.query(User).filter(User.email == "admin@unidocs.com").first()
-    if not admin:
+    admin_email = settings.INITIAL_ADMIN_EMAIL.strip()
+    admin_password = settings.INITIAL_ADMIN_PASSWORD
+    admin = db.query(User).filter(User.email == admin_email).first() if admin_email else None
+    if admin_email and admin_password and not admin:
         admin = User(
             id=str(uuid.uuid4()),
-            email="admin@unidocs.com",
+            email=admin_email,
             full_name="Administrator",
-            password_hash=hash_password("admin123456"),
+            password_hash=hash_password(admin_password),
             role=UserRole.ADMINISTRATOR,
             university_id=uni_qalam.id,
             is_active=True

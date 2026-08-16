@@ -17,8 +17,6 @@ class File(Base, UUIDMixin, TimestampMixin):
 
     title: Mapped[str] = mapped_column(String(255), nullable=False)
     description: Mapped[str] = mapped_column(Text, nullable=True)
-    original_filename: Mapped[str] = mapped_column(String(512), nullable=False, default="upload")
-    mime_type: Mapped[str] = mapped_column(String(255), nullable=False, default="application/octet-stream")
 
     storage_key: Mapped[str] = mapped_column(String(512), nullable=False)
     file_hash: Mapped[str] = mapped_column(String(64), index=True, nullable=False)  # SHA-256

@@ -78,11 +78,16 @@ class NotificationRepository:
 class SettingsRepository:
     DEFAULTS = {
         "max_file_size_mb": "50",
-        "allowed_extensions": "*",
+        "allowed_extensions": "pdf,doc,docx,xls,xlsx,ppt,pptx,txt,rtf,odt,ods,odp,csv,md,html,htm,xml,json",
         "page_count_check_enabled": "false",
         "min_page_count": "1",
         "review_lock_minutes": "15",
         "email_notifications_enabled": "false",
+        "maintenance_mode": "false",
+        "maintenance_message": "النظام متاح حالياً.",
+        "system_announcement": "",
+        "notifications_new_files_enabled": "true",
+        "notifications_upload_status_enabled": "true",
     }
 
     def __init__(self, db: Session):

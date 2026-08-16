@@ -12,8 +12,6 @@ class FileOut(BaseModel):
     uploader_id: str
     title: str
     description: str | None
-    original_filename: str
-    mime_type: str
     file_hash: str
     file_size_bytes: int
     status: FileStatus
@@ -30,8 +28,6 @@ class FileOut(BaseModel):
 class FileListItem(BaseModel):
     id: str
     title: str
-    original_filename: str
-    mime_type: str
     subject_id: str
     status: FileStatus
     file_size_bytes: int

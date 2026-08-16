@@ -1,15 +1,15 @@
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from app.api.routes import admin, auth, files, moderation, notifications, taxonomy, upload, upload_requests, users
+from app.api.routes import admin, auth, files, moderation, notifications, settings as settings_routes, taxonomy, upload, upload_requests, users
 from app.core.config import get_settings
-from app.core.database import SessionLocal, ensure_schema, get_db
-from sqlalchemy.orm import Session
-from app.core.seed import seed_data
+from app.core.database import Base, SessionLocal, engine
+from app.repositories.misc_repositories import SettingsRepository
 from app.core.errors import (
     AppError,
     app_error_handler,
@@ -20,6 +20,11 @@ from app.core.errors import (
 from app.middleware.rate_limit import limiter
 
 settings = get_settings()
+
+
+async def rate_limit_handler(request, exc):
+    return await app_error_handler(request, AppError("Too many requests", "RATE_LIMITED", 429))
+
 
 app = FastAPI(title=settings.APP_NAME, debug=settings.DEBUG)
 
@@ -37,42 +42,45 @@ app.add_middleware(
 app.add_exception_handler(AppError, app_error_handler)
 app.add_exception_handler(StarletteHTTPException, http_exception_handler)
 app.add_exception_handler(RequestValidationError, validation_exception_handler)
-app.add_exception_handler(RateLimitExceeded, lambda r, e: app_error_handler(r, AppError("Too many requests", "RATE_LIMITED", 429)))
+app.add_exception_handler(RateLimitExceeded, rate_limit_handler)
 app.add_exception_handler(Exception, unhandled_exception_handler)
+
+
+@app.middleware("http")
+async def maintenance_guard(request: Request, call_next):
+    path = request.url.path
+    allowed_during_maintenance = path in {"/health", "/api/auth/login", "/api/settings/public"} or path.startswith("/api/admin")
+    if not allowed_during_maintenance and path.startswith("/api"):
+        try:
+            with SessionLocal() as db:
+                enabled = SettingsRepository(db).get("maintenance_mode").lower() == "true"
+                message = SettingsRepository(db).get("maintenance_message")
+            if enabled:
+                return JSONResponse(status_code=503, content={"message": message, "code": "MAINTENANCE_MODE"})
+        except Exception:
+            # A database outage must be handled by the normal endpoint error path.
+            pass
+    return await call_next(request)
 
 app.include_router(auth.router)
 app.include_router(taxonomy.router)
-app.include_router(upload.router)
 app.include_router(files.router)
+app.include_router(upload.router)
 app.include_router(upload_requests.router)
 app.include_router(notifications.router)
 app.include_router(moderation.router)
 app.include_router(admin.router)
 app.include_router(users.router)
+app.include_router(settings_routes.router)
 
 
 @app.on_event("startup")
 def on_startup():
-    ensure_schema()
-    with SessionLocal() as db:
-        seed_data(db)
+    # In production, use Alembic migrations instead of create_all.
+    if settings.ENV == "development":
+        Base.metadata.create_all(bind=engine)
 
-
-@app.get("/ping")
-def ping():
-    return {"ping": "pong"}
 
 @app.get("/health")
-def health(db: Session = Depends(get_db)):
-    try:
-        from sqlalchemy import text
-        db.execute(text("SELECT 1"))
-        db_status = "connected"
-    except Exception as e:
-        db_status = f"error: {str(e)}"
-    
-    return {
-        "success": True, 
-        "message": "UniDocs API is running",
-        "database": db_status
-    }
+def health():
+    return {"success": True, "message": "UniDocs API is running"}

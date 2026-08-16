@@ -49,7 +49,7 @@ class AuditLog(Base, UUIDMixin):
 class DownloadLog(Base, UUIDMixin):
     __tablename__ = "download_logs"
 
-    file_id: Mapped[str] = mapped_column(ForeignKey("files.id"), index=True, nullable=False)
+    file_id: Mapped[str] = mapped_column(ForeignKey("files.id", ondelete="CASCADE"), index=True, nullable=False)
     user_id: Mapped[str] = mapped_column(ForeignKey("users.id"), index=True, nullable=True)
     university_id: Mapped[str] = mapped_column(ForeignKey("universities.id"), index=True, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)

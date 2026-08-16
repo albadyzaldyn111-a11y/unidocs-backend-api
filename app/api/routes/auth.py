@@ -5,7 +5,6 @@ from app.core.config import get_settings
 from app.core.database import get_db
 from app.middleware.auth import CurrentUser, get_current_user
 from app.middleware.rate_limit import limiter
-from app.models.enums import UserRole
 from app.repositories.user_repository import UserRepository
 from app.schemas.auth import LoginRequest, RegisterRequest, TokenResponse, UserOut
 from app.services.auth_service import AuthService
@@ -36,6 +35,4 @@ def login(request: Request, payload: LoginRequest, db: Session = Depends(get_db)
 @router.get("/me", response_model=UserOut)
 def me(current_user: CurrentUser = Depends(get_current_user), db: Session = Depends(get_db)):
     user = UserRepository(db).get_by_id(current_user.id)
-    if user and user.email.lower() == 'admin@unidocs.com':
-        user.role = UserRole.ADMINISTRATOR
     return user

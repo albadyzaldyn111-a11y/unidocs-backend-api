@@ -28,13 +28,11 @@ class Settings(BaseSettings):
     # File storage
     STORAGE_BACKEND: str = "local"  # local | s3 | supabase
     STORAGE_PATH: str = "./storage"
-    MAX_FILE_SIZE_MB: int = 50
-    ALLOWED_EXTENSIONS: List[str] = ["*"]
-
-    # Supabase (Optional, for permanent storage)
-    SUPABASE_URL: str | None = None
-    SUPABASE_KEY: str | None = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRzZnZqaGh4a3ZzYm5jdmR4Y2tiIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4NjczMzQ1NywiZXhwIjoyMTAyMzA5NDU3fQ.9WbBl697FiwIXhNdv_gz2EUuPkdodSOtkJ5Zwp7MIUM"
+    SUPABASE_URL: str = ""
+    SUPABASE_KEY: str = ""
     SUPABASE_BUCKET: str = "unidocs"
+    MAX_FILE_SIZE_MB: int = 50
+    ALLOWED_EXTENSIONS: List[str] = ["pdf"]
 
     # Moderation
     REVIEW_LOCK_MINUTES: int = 15

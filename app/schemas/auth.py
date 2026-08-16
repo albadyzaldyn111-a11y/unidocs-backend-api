@@ -30,8 +30,16 @@ class UserOut(BaseModel):
 
     model_config = {"from_attributes": True}
 
-class UserUpdate(BaseModel):
-    full_name: str | None = None
-    role: UserRole | None = None
+
+class ProfileUpdate(BaseModel):
+    full_name: str | None = Field(default=None, min_length=2, max_length=255)
     university_id: str | None = None
-    is_active: bool | None = None
+
+
+class ChangePasswordRequest(BaseModel):
+    current_password: str = Field(min_length=1, max_length=128)
+    new_password: str = Field(min_length=8, max_length=128)
+
+
+class DeleteAccountRequest(BaseModel):
+    password: str = Field(min_length=1, max_length=128)
