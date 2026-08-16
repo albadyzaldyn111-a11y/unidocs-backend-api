@@ -48,6 +48,7 @@ class FileService:
         title: str,
         description: str | None,
         filename: str,
+        mime_type: str | None,
         raw_bytes: bytes,
     ) -> File:
         subject = self.taxonomy.get_subject(subject_id, university_id)
@@ -87,6 +88,8 @@ class FileService:
             uploader_id=uploader_id,
             title=title,
             description=description,
+            original_filename=filename,
+            mime_type=mime_type or "application/octet-stream",
             storage_key=storage_key,
             file_hash=file_hash,
             file_size_bytes=len(raw_bytes),
@@ -104,6 +107,7 @@ class FileService:
         university_id: str,
         parent_file_id: str,
         filename: str,
+        mime_type: str | None,
         raw_bytes: bytes,
     ) -> File:
         parent = self.files.get(parent_file_id, university_id)
@@ -137,6 +141,8 @@ class FileService:
             uploader_id=uploader_id,
             title=parent.title,
             description=parent.description,
+            original_filename=filename,
+            mime_type=mime_type or "application/octet-stream",
             storage_key=storage_key,
             file_hash=file_hash,
             file_size_bytes=len(raw_bytes),

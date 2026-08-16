@@ -33,6 +33,7 @@ async def upload_file(
         title=title,
         description=description,
         filename=file.filename or "upload.pdf",
+        mime_type=file.content_type,
         raw_bytes=raw_bytes,
     )
     return result
@@ -53,6 +54,7 @@ async def upload_new_version(
         university_id=current_user.university_id,
         parent_file_id=file_id,
         filename=file.filename or "upload.pdf",
+        mime_type=file.content_type,
         raw_bytes=raw_bytes,
     )
     return result
