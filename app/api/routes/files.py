@@ -25,9 +25,16 @@ def search_files(
     page: int = Query(1, ge=1),
     limit: int = Query(20, ge=1, le=100),
     db: Session = Depends(get_db),
+    current_user: CurrentUser | None = Depends(get_optional_user),
 ):
     items, total = FileRepository(db).search(
-        university_id=university_id, q=q, subject_id=subject_id, sort=sort, page=page, limit=limit
+        university_id=university_id,
+        q=q,
+        subject_id=subject_id,
+        sort=sort,
+        page=page,
+        limit=limit,
+        include_pending_for_user=current_user.id if current_user else None,
     )
     return PaginatedFiles(
         items=[FileListItem.model_validate(i) for i in items], total=total, page=page, limit=limit

@@ -39,8 +39,18 @@ class FileRepository:
         sort: str = "recent",
         page: int = 1,
         limit: int = 20,
+        include_pending_for_user: str | None = None,
     ) -> tuple[list[File], int]:
-        stmt = select(File).where(File.university_id == university_id, File.status == status)
+        from sqlalchemy import and_, or_
+        
+        # Base condition: Approved files
+        conditions = [File.status == status]
+        
+        # If requested, also include PENDING files uploaded by this specific user
+        if include_pending_for_user:
+            conditions.append(and_(File.status == FileStatus.PENDING, File.uploader_id == include_pending_for_user))
+            
+        stmt = select(File).where(File.university_id == university_id, or_(*conditions))
 
         if subject_id:
             stmt = stmt.where(File.subject_id == subject_id)
