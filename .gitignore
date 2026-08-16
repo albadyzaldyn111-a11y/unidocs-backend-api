@@ -1,6 +1,6 @@
 .env
 *.db
-storage/
+/storage/
 __pycache__/
 *.py[cod]
 .pytest_cache/
