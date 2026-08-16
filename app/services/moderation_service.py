@@ -1,10 +1,12 @@
 from datetime import datetime, timedelta, timezone
 
+from sqlalchemy import delete
 from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
 from app.core.errors import AppError
 from app.models.enums import FileStatus, NotificationType
+from app.models.file import File
 from app.models.misc import DownloadLog
 from app.repositories.file_repository import FileRepository
 from app.services.audit_service import AuditService
@@ -111,7 +113,12 @@ class ModerationService:
         except Exception:
             pass  # storage cleanup failure should not block the audit-critical delete
         self.audit.log(moderator_id, "DELETE_FILE", "file", file_obj.id, "violating content")
-        self.db.query(DownloadLog).filter(DownloadLog.file_id == file_obj.id).delete(synchronize_session=False)
+        # Keep deletion compatible with production databases that predate the
+        # CASCADE migration: remove dependent rows explicitly before deleting.
+        self.db.execute(delete(DownloadLog).where(DownloadLog.file_id == file_obj.id))
+        self.db.query(File).filter(File.parent_file_id == file_obj.id).update(
+            {File.parent_file_id: None}, synchronize_session=False
+        )
         self.db.delete(file_obj)
         self.db.commit()
 
