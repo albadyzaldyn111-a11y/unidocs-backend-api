@@ -433,17 +433,17 @@ def delete_subject(
 
 @router.get("/universities", response_model=list[UniversityOut])
 def admin_list_universities(current_user: CurrentUser = Depends(require_admin), db: Session = Depends(get_db)):
-    return list(db.scalars(select(University).order_by(University.created_at.desc())).all())
+    return list(db.scalars(select(University).where(University.is_active == True).order_by(University.created_at.desc())).all())
 
 
 @router.get("/universities/{university_id}/faculties", response_model=list[FacultyOut])
 def admin_list_faculties(university_id: str, current_user: CurrentUser = Depends(require_admin), db: Session = Depends(get_db)):
-    return list(db.scalars(select(Faculty).where(Faculty.university_id == university_id).order_by(Faculty.created_at.desc())).all())
+    return list(db.scalars(select(Faculty).where(Faculty.university_id == university_id, Faculty.is_active == True).order_by(Faculty.created_at.desc())).all())
 
 
 @router.get("/faculties/{faculty_id}/departments", response_model=list[DepartmentOut])
 def admin_list_departments(faculty_id: str, current_user: CurrentUser = Depends(require_admin), db: Session = Depends(get_db)):
-    return list(db.scalars(select(Department).where(Department.faculty_id == faculty_id).order_by(Department.created_at.desc())).all())
+    return list(db.scalars(select(Department).where(Department.faculty_id == faculty_id, Department.is_active == True).order_by(Department.created_at.desc())).all())
 
 
 @router.get("/departments/{department_id}/levels", response_model=list[LevelOut])

@@ -62,16 +62,21 @@ async def maintenance_guard(request: Request, call_next):
             pass
     return await call_next(request)
 
+# Standard API routes
 app.include_router(auth.router)
 app.include_router(taxonomy.router)
-app.include_router(files.router)
-app.include_router(upload.router)
+app.include_router(files.router, prefix="/api/files")
+app.include_router(upload.router, prefix="/api")
 app.include_router(upload_requests.router)
 app.include_router(notifications.router)
 app.include_router(moderation.router)
 app.include_router(admin.router)
 app.include_router(users.router)
 app.include_router(settings_routes.router)
+
+# Legacy compatibility for apps missing the /api prefix (specifically for upload/files)
+app.include_router(files.router, prefix="/files", tags=["legacy"])
+app.include_router(upload.router, prefix="", tags=["legacy"])
 
 
 @app.on_event("startup")

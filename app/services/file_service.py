@@ -154,14 +154,14 @@ class FileService:
         self.db.commit()
         return new_version
 
-    def register_view(self, file_id: str, university_id: str) -> File:
-        file_obj = self._get_visible_or_404(file_id, university_id)
+    def register_view(self, file_id: str, university_id: str, viewer_id: str | None = None) -> File:
+        file_obj = self._get_visible_or_404(file_id, university_id, viewer_id)
         file_obj.views_count += 1
         self.db.commit()
         return file_obj
 
     def register_download(self, file_id: str, university_id: str, user_id: str | None = None) -> File:
-        file_obj = self._get_visible_or_404(file_id, university_id)
+        file_obj = self._get_visible_or_404(file_id, university_id, user_id)
         file_obj.downloads_count += 1
 
         from datetime import datetime, timezone
@@ -188,9 +188,17 @@ class FileService:
             raise AppError(f"File storage is temporarily unavailable: {detail}", "STORAGE_UNAVAILABLE", 503)
         return self.storage
 
-    def _get_visible_or_404(self, file_id: str, university_id: str) -> File:
+    def _get_visible_or_404(self, file_id: str, university_id: str, viewer_id: str | None = None) -> File:
         file_obj = self.files.get(file_id, university_id)
-        if not file_obj or file_obj.status not in (FileStatus.APPROVED, FileStatus.ARCHIVED):
+        if not file_obj:
+            raise AppError("File not found", "FILE_NOT_FOUND", 404)
+
+        # Visible if approved/archived OR if the viewer is the uploader
+        is_visible = file_obj.status in (FileStatus.APPROVED, FileStatus.ARCHIVED)
+        if not is_visible and viewer_id and file_obj.uploader_id == viewer_id:
+            is_visible = True
+
+        if not is_visible:
             raise AppError("File not found", "FILE_NOT_FOUND", 404)
         return file_obj
 

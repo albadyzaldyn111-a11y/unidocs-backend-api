@@ -10,7 +10,7 @@ from app.repositories.file_repository import FileRepository
 from app.schemas.file import FileListItem, FileOut
 from app.services.file_service import FileService
 
-router = APIRouter(prefix="/api", tags=["upload"])
+router = APIRouter(tags=["upload"])
 settings = get_settings()
 
 

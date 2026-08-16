@@ -13,7 +13,7 @@ from app.repositories.file_repository import FileRepository
 from app.schemas.file import FileListItem, FileOut, PaginatedFiles
 from app.services.file_service import FileService
 
-router = APIRouter(prefix="/api/files", tags=["files"])
+router = APIRouter(tags=["files"])
 
 
 @router.get("", response_model=PaginatedFiles)
@@ -43,9 +43,14 @@ def get_file(file_id: str, university_id: str, db: Session = Depends(get_db)):
 
 
 @router.get("/{file_id}/preview")
-def preview_file(file_id: str, university_id: str, db: Session = Depends(get_db)):
+def preview_file(
+    file_id: str,
+    university_id: str,
+    db: Session = Depends(get_db),
+    current_user: CurrentUser | None = Depends(get_optional_user),
+):
     service = FileService(db)
-    file_obj = service.register_view(file_id, university_id)
+    file_obj = service.register_view(file_id, university_id, current_user.id if current_user else None)
     stream = service.open_stream(file_obj)
     return StreamingResponse(stream, media_type="application/pdf")
 
