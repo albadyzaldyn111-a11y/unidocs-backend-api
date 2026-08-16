@@ -31,11 +31,13 @@ class FileService:
         self.taxonomy = TaxonomyRepository(db)
         self.settings = SettingsRepository(db)
         self.audit = AuditService(db)
+        self.storage_error: Exception | None = None
         try:
             self.storage = get_storage()
-        except Exception:
+        except Exception as exc:
             logger.exception("File storage is not configured or unavailable")
             self.storage = None
+            self.storage_error = exc
 
     def upload(
         self,
@@ -76,7 +78,8 @@ class FileService:
             self._require_storage().save(storage_key, io.BytesIO(raw_bytes))
         except Exception as exc:
             logger.exception("Storage upload failed for key=%s", storage_key)
-            raise AppError("File storage is temporarily unavailable", "STORAGE_UNAVAILABLE", 503) from exc
+            detail = str(exc).replace("\n", " ")[:240]
+            raise AppError(f"File storage is temporarily unavailable: {detail}", "STORAGE_UNAVAILABLE", 503) from exc
 
         file_obj = self.files.create(
             university_id=university_id,
@@ -125,7 +128,8 @@ class FileService:
             self._require_storage().save(storage_key, io.BytesIO(raw_bytes))
         except Exception as exc:
             logger.exception("Storage upload failed for version key=%s", storage_key)
-            raise AppError("File storage is temporarily unavailable", "STORAGE_UNAVAILABLE", 503) from exc
+            detail = str(exc).replace("\n", " ")[:240]
+            raise AppError(f"File storage is temporarily unavailable: {detail}", "STORAGE_UNAVAILABLE", 503) from exc
 
         new_version = self.files.create(
             university_id=university_id,
@@ -174,7 +178,8 @@ class FileService:
 
     def _require_storage(self):
         if self.storage is None:
-            raise AppError("File storage is temporarily unavailable", "STORAGE_UNAVAILABLE", 503)
+            detail = str(self.storage_error).replace("\n", " ")[:240] if self.storage_error else "provider is not configured"
+            raise AppError(f"File storage is temporarily unavailable: {detail}", "STORAGE_UNAVAILABLE", 503)
         return self.storage
 
     def _get_visible_or_404(self, file_id: str, university_id: str) -> File:
