@@ -69,3 +69,29 @@ class NotificationService:
             )
         self.db.flush()
         return len(recipient_ids)
+
+    def notify_moderators(
+        self,
+        university_id: str,
+        type_: NotificationType,
+        title: str,
+        body: str | None = None,
+        related_entity_type: str | None = None,
+        related_entity_id: str | None = None,
+    ) -> int:
+        """Create inbox notifications for moderators/admins in a university."""
+        recipient_ids = UserRepository(self.db).moderator_ids_by_university(university_id)
+
+        for recipient_id in recipient_ids:
+            self.db.add(
+                Notification(
+                    user_id=recipient_id,
+                    type=type_,
+                    title=title,
+                    body=body,
+                    related_entity_type=related_entity_type,
+                    related_entity_id=related_entity_id,
+                )
+            )
+        self.db.flush()
+        return len(recipient_ids)

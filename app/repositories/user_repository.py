@@ -56,6 +56,17 @@ class UserRepository:
             )
         )
 
+    def moderator_ids_by_university(self, university_id: str) -> list[str]:
+        return list(
+            self.db.scalars(
+                select(User.id).where(
+                    User.university_id == university_id,
+                    User.is_active.is_(True),
+                    User.role.in_([UserRole.MODERATOR, UserRole.ADMINISTRATOR]),
+                )
+            )
+        )
+
     def count_by_university(self, university_id: str) -> int:
         return self.db.scalar(select(func.count()).select_from(User).where(User.university_id == university_id)) or 0
 

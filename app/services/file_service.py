@@ -11,6 +11,8 @@ from app.repositories.file_repository import FileRepository
 from app.repositories.misc_repositories import SettingsRepository
 from app.repositories.taxonomy_repository import TaxonomyRepository
 from app.services.audit_service import AuditService
+from app.services.notification_service import NotificationService
+from app.models.enums import NotificationType
 from app.services.file_validation import (
     compute_sha256,
     validate_extension,
@@ -31,6 +33,7 @@ class FileService:
         self.taxonomy = TaxonomyRepository(db)
         self.settings = SettingsRepository(db)
         self.audit = AuditService(db)
+        self.notifications = NotificationService(db)
         self.storage_error: Exception | None = None
         try:
             self.storage = get_storage()
@@ -102,6 +105,18 @@ class FileService:
             status=FileStatus.PENDING,
             version_number=1,
         )
+        self.db.flush()
+
+        # Notify moderators about new pending file
+        self.notifications.notify_moderators(
+            target_university_id,
+            NotificationType.SYSTEM,
+            "ملف جديد قيد المراجعة",
+            f"تم رفع ملف جديد «{title}» وينتظر المراجعة.",
+            "file",
+            file_obj.id,
+        )
+
         self.audit.log(uploader_id, "UPLOAD_FILE", "file", file_obj.id, title)
         self.db.commit()
         return file_obj
@@ -159,6 +174,18 @@ class FileService:
             version_number=parent.version_number + 1,
             parent_file_id=parent.id,
         )
+        self.db.flush()
+
+        # Notify moderators about new version
+        self.notifications.notify_moderators(
+            target_university_id,
+            NotificationType.SYSTEM,
+            "إصدار جديد قيد المراجعة",
+            f"تم رفع إصدار جديد للملف «{parent.title}» وينتظر المراجعة.",
+            "file",
+            new_version.id,
+        )
+
         self.audit.log(uploader_id, "UPLOAD_NEW_VERSION", "file", new_version.id, f"parent={parent.id}")
         self.db.commit()
         return new_version
