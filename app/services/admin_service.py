@@ -33,6 +33,8 @@ class AdminService:
 
     def _managed_user(self, user_id: str, university_id: str | None = None):
         user = self.users.get_by_id(user_id)
+        # If university_id is provided, restrict to that university. 
+        # If None (super admin case), allow management across all universities.
         if not user or (university_id is not None and user.university_id != university_id):
             raise AppError("User not found", "USER_NOT_FOUND", 404)
         return user
